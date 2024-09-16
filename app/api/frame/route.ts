@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const generateSVG = (question: string) => {
+const generateSVG = (question: string, answers?: string[]) => {
   const encodedQuestion = question
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -23,10 +23,19 @@ const generateSVG = (question: string) => {
       }
     }
     lines.push(currentLine);
+    answers &&
+      answers.forEach((answer, index) => {
+        const encodedAnswer = answer
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/"/g, "&quot;");
+        lines.push(`${index + 1}. ${encodedAnswer}`);
+      });
+
     return lines;
   };
 
-  const fontSize = 32;
+  const fontSize = 42;
   const maxWidth = 1100; // Slightly less than SVG width to add padding
   const wrappedText = wrapText(encodedQuestion, maxWidth, fontSize);
 
@@ -38,9 +47,9 @@ const generateSVG = (question: string) => {
     .join("");
 
   return `
-    <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+    <svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="#f0f0f0"/>
-      <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#333" text-anchor="middle" dominant-baseline="middle">
+      <text x="50%" y="50%" font-weight="bold" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#333" text-anchor="middle" dominant-baseline="middle">
         ${svgLines}
       </text>
     </svg>
@@ -114,17 +123,17 @@ async function getResponse(req: NextRequest): Promise<NextResponse> {
   ).then((res) => res.json());
   const answerOptions = response.question.answers;
 
-  const svgQuestion = generateSVG(response.question.question);
+  const svgQuestion = generateSVG(response.question.question, answerOptions);
   const svgBase64 = Buffer.from(svgQuestion).toString("base64");
 
   return new NextResponse(`<!DOCTYPE html><html><head>
     <title>This is frame ${id}</title>
     <meta property="fc:frame" content="vNext" />
     <meta property="fc:frame:image" content="data:image/svg+xml;base64,${svgBase64}" />
-    <meta property="fc:frame:button:1" content="${answerOptions[0]}" />
-    <meta property="fc:frame:button:2" content="${answerOptions[1]}" />
-    <meta property="fc:frame:button:3" content="${answerOptions[2]}" />
-    <meta property="fc:frame:button:4" content="${answerOptions[3]}" />
+    <meta property="fc:frame:button:1" content="1" />
+    <meta property="fc:frame:button:2" content="2" />
+    <meta property="fc:frame:button:3" content="3" />
+    <meta property="fc:frame:button:4" content="4" />
     <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
     <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/frame?id=${nextId}" />
   </head></html>`);
