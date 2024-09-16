@@ -1,57 +1,137 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+
+const generateSVG = (question: string) => {
+  const encodedQuestion = question
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/"/g, "&quot;");
+
+  // Function to wrap text
+  const wrapText = (text: string, maxWidth: number, fontSize: number) => {
+    const words = text.split(" ");
+    const lines = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i];
+      const width = (currentLine.length + word.length) * (fontSize * 0.6); // Approximate width
+      if (width < maxWidth) {
+        currentLine += " " + word;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    lines.push(currentLine);
+    return lines;
+  };
+
+  const fontSize = 32;
+  const maxWidth = 1100; // Slightly less than SVG width to add padding
+  const wrappedText = wrapText(encodedQuestion, maxWidth, fontSize);
+
+  const svgLines = wrappedText
+    .map(
+      (line, index) =>
+        `<tspan x="50%" dy="${index === 0 ? "0" : "1.2em"}">${line}</tspan>`
+    )
+    .join("");
+
+  return `
+    <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="#f0f0f0"/>
+      <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#333" text-anchor="middle" dominant-baseline="middle">
+        ${svgLines}
+      </text>
+    </svg>
+  `.trim();
+};
 
 async function getResponse(req: NextRequest): Promise<NextResponse> {
-  const searchParams = req.nextUrl.searchParams
-  const idString:any = searchParams.get("id")
-  const id = parseInt(idString)
-  const nextId = id + 1
+  const searchParams = req.nextUrl.searchParams;
+  const idString: any = searchParams.get("id");
+  const id = parseInt(idString);
+  const nextId = id + 1;
   const data = await req.json();
   const buttonId = data.untrustedData.buttonIndex;
 
-  const answerOptions = [
-    ["Moscow", "Paris", "Amsterdam"],
-    ["London", "Berlin", "Copenhagen"],
-    ["Madrid", "Tokyo", "Lisbon"],
-  ]
+  // Set up the Hub client
+  // const hub = await getSSLHubRpcClient("nemes.farcaster.xyz:2283");
 
-  const correctAnswers = [1, 0, 2];
+  if (id > 1) {
+    const prevResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/quiz?id=${id - 1}`,
+      {
+        method: "GET",
+      }
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        return { data: data.question.answers, score: data.score };
+      });
 
-  if (id > 1 && buttonId-1 !== correctAnswers[id - 2]) {
-    return new NextResponse(`<!DOCTYPE html><html><head>
-    <title>Wrong! Try again.</title>
-    <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_PINATA_GATEWAY_URL}/ipfs/QmYZgqhhhJJJh897Q7X65dg2YAgsbfUxm74aqNnc6SdXe7/wrong.png" />
-    <meta property="fc:frame:button:1" content="Play again"} />
-    <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/end" />
-    <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
-  </head></html>`);
+    const body = {
+      questionId: id - 1,
+      answer: prevResponse.data[buttonId - 1],
+      fid: data.untrustedData.fid,
+    };
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/quiz`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then((res) => res.json());
+
+    const addPoint = res.result ? 1 : 0;
+
+    const currPoints = prevResponse.score + addPoint;
+
+    console.log("Response from quiz API:", res.result, currPoints);
+
+    if (id === 21) {
+      const svgScore = generateSVG(
+        `Congratulations! You got ${currPoints} out of 20 answers correct!`
+      );
+      const svgBase64End = Buffer.from(svgScore).toString("base64");
+      return new NextResponse(`<!DOCTYPE html><html><head>
+      <title>The End</title>
+      <meta property="fc:frame" content="vNext" />
+      <meta property="fc:frame:image" content="data:image/svg+xml;base64,${svgBase64End}" />
+      <meta property="fc:frame:button:1" content="Play again" />
+      <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/frame?id=1" />
+      <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
+    </head></html>`);
+    }
   }
 
-  if(id === 4){
-      return new NextResponse(`<!DOCTYPE html><html><head>
-    <title>You won</title>
-    <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_PINATA_GATEWAY_URL}/ipfs/QmYZgqhhhJJJh897Q7X65dg2YAgsbfUxm74aqNnc6SdXe7/win.png" />
-    <meta property="fc:frame:button:1" content="Play again"} />
-    <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/end" />
-    <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
-  </head></html>`);
-  } else {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/quiz?id=${id}`,
+    {
+      method: "GET",
+    }
+  ).then((res) => res.json());
+  const answerOptions = response.question.answers;
+
+  const svgQuestion = generateSVG(response.question.question);
+  const svgBase64 = Buffer.from(svgQuestion).toString("base64");
+
   return new NextResponse(`<!DOCTYPE html><html><head>
     <title>This is frame ${id}</title>
     <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_PINATA_GATEWAY_URL}/ipfs/QmYZgqhhhJJJh897Q7X65dg2YAgsbfUxm74aqNnc6SdXe7/${id}.png" />
-    <meta property="fc:frame:button:1" content=${answerOptions[id-1][0]} />
-    <meta property="fc:frame:button:2" content=${answerOptions[id-1][1]} />
-    <meta property="fc:frame:button:3" content=${answerOptions[id-1][2]} />
+    <meta property="fc:frame:image" content="data:image/svg+xml;base64,${svgBase64}" />
+    <meta property="fc:frame:button:1" content="${answerOptions[0]}" />
+    <meta property="fc:frame:button:2" content="${answerOptions[1]}" />
+    <meta property="fc:frame:button:3" content="${answerOptions[2]}" />
+    <meta property="fc:frame:button:4" content="${answerOptions[3]}" />
     <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
     <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/frame?id=${nextId}" />
   </head></html>`);
-  }
 }
 
 export async function POST(req: NextRequest): Promise<Response> {
   return getResponse(req);
 }
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";

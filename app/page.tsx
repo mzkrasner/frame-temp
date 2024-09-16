@@ -7,7 +7,7 @@ const frameMetadata = getFrameMetadata({
       label: "Begin the quiz"
     }
   ],
-  image: `${process.env.NEXT_PUBLIC_PINATA_GATEWAY_URL}/ipfs/QmYZgqhhhJJJh897Q7X65dg2YAgsbfUxm74aqNnc6SdXe7/start.png`,
+  image: `${process.env.NEXT_PUBLIC_BASE_URL}/site-preview.png`,
   post_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/frame?id=1`,
 });
 
