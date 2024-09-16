@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Quiz farcaster frame',
     description: 'Beginning of the quiz',
-    images: [`${process.env.NEXT_PUBLIC_PINATA_GATEWAY_URL}/ipfs/QmYZgqhhhJJJh897Q7X65dg2YAgsbfUxm74aqNnc6SdXe7/start.png`],
+    images: [`${process.env.NEXT_PUBLIC_BASE_URL}/site-preview.png`],
   },
   other: {
     ...frameMetadata,
