@@ -1,12 +1,13 @@
 {
-  "name": "frame-tutorial",
+  "name": "frame-quiz",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@coinbase/onchainkit": "^0.6.1",
