@@ -62,16 +62,25 @@ const generateSVG = (question: string, answers?: string[]) => {
 
   return `
     <svg width="${svgWidth}" height="600" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="#f0f0f0"/>
-      <text x="50%" y="${startY}" font-weight="bold" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#333" text-anchor="middle" dominant-baseline="middle">
+      <defs>
+        <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#1a2530;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#bg-gradient)" rx="15" ry="15"/>
+      <text x="50%" y="${startY}" font-weight="bold" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#ecf0f1" text-anchor="middle" filter="url(#shadow)">
         ${questionSvgLines}
       </text>
-      <line x1="100" y1="${separatorY}" x2="1100" y2="${separatorY}" stroke="#333" stroke-width="2"/>
+      <line x1="100" y1="${separatorY}" x2="1100" y2="${separatorY}" stroke="#ecf0f1" stroke-width="2" opacity="0.7"/>
       <text y="${
         separatorY + 20
-      }" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#333">
+      }" font-family="Arial, sans-serif" font-size="${fontSize * 0.9}" fill="#bdc3c7">
         ${answersSvgLines}
       </text>
+      <filter id="shadow">
+        <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity="0.3"/>
+      </filter>
     </svg>
   `.trim();
 };
