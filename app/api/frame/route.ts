@@ -23,34 +23,54 @@ const generateSVG = (question: string, answers?: string[]) => {
       }
     }
     lines.push(currentLine);
-    answers &&
-      answers.forEach((answer, index) => {
-        const encodedAnswer = answer
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/"/g, "&quot;");
-        lines.push(`${index + 1}. ${encodedAnswer}`);
-      });
-
     return lines;
   };
 
   const fontSize = 42;
   const maxWidth = 1100; // Slightly less than SVG width to add padding
-  const wrappedText = wrapText(encodedQuestion, maxWidth, fontSize);
+  const wrappedQuestion = wrapText(encodedQuestion, maxWidth, fontSize);
 
-  const svgLines = wrappedText
+  let wrappedAnswers: string[] = [];
+  if (answers) {
+    wrappedAnswers = answers.flatMap((answer, index) => {
+      const encodedAnswer = answer
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/"/g, "&quot;");
+      return wrapText(`${index + 1}. ${encodedAnswer}`, maxWidth, fontSize);
+    });
+  }
+
+  const questionSvgLines = wrappedQuestion
     .map(
       (line, index) =>
         `<tspan x="50%" dy="${index === 0 ? "0" : "1.2em"}">${line}</tspan>`
     )
     .join("");
 
+  const questionHeight = wrappedQuestion.length * fontSize * 1.2;
+  const startY = 150; // Reduced from 300 to move everything up
+  const separatorY = startY + questionHeight / 2 + 40; // 20px padding
+  const svgWidth = 1200;
+
+  const answersSvgLines = wrappedAnswers
+    .map(
+      (line, index) =>
+        `<tspan x="8%" dy="${index === 0 ? "1.2em" : "1.2em"}">${line}</tspan>`
+    )
+    .join("");
+
   return `
-    <svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
+    <svg width="${svgWidth}" height="600" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="#f0f0f0"/>
-      <text x="50%" y="50%" font-weight="bold" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#333" text-anchor="middle" dominant-baseline="middle">
-        ${svgLines}
+      <text x="50%" y="${startY}" font-weight="bold" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#333" text-anchor="middle" dominant-baseline="middle">
+        ${questionSvgLines}
+      </text>
+      <line x1="100" y1="${separatorY}" x2="1100" y2="${separatorY}" stroke="#333" stroke-width="2"/>
+      <text y="${
+        separatorY + 20
+      }" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#333">
+        ${answersSvgLines}
       </text>
     </svg>
   `.trim();
