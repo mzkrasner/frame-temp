@@ -7,7 +7,7 @@ const frameMetadata = getFrameMetadata({
       label: "Begin the quiz"
     }
   ],
-  image: `${process.env.NEXT_PUBLIC_BASE_URL}/site-preview.png`,
+  image: `${process.env.NEXT_PUBLIC_BASE_URL}/hoku-welcome.png`,
   post_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/frame?id=1`,
 });
 
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Quiz farcaster frame',
     description: 'Beginning of the quiz',
-    images: [`${process.env.NEXT_PUBLIC_BASE_URL}/site-preview.png`],
+    images: [`${process.env.NEXT_PUBLIC_BASE_URL}/hoku-welcome.png`],
   },
   other: {
     ...frameMetadata,
